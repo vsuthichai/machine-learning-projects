@@ -91,7 +91,7 @@ def main():
         config = projector.ProjectorConfig()
         embedding_config = config.embeddings.add()
         embedding_config.tensor_name = embedding.name
-        embedding_config.metadata_path = os.path.join(logdir, 'labels_256.tsv')
+        embedding_config.metadata_path = 'labels_256.tsv'
         projector.visualize_embeddings(writer, config)
 
         # Saver, Save model
