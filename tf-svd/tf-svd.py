@@ -14,7 +14,7 @@ def text2matrix(filename, window_size=4):
     # Read in preprocessed text
     space_regex = re.compile(r'\s+')
     with open(filename, "r") as f:
-        words = space_regex.split(f.read())
+        words = space_regex.split(f.read().strip())
 
     # Counts
     print("Bulding count dictionary", flush=True)
@@ -26,7 +26,7 @@ def text2matrix(filename, window_size=4):
     # Trim by frequency
     print("Trimming by frequency", flush=True)
     keep_size = 9999
-    counts = dict(sorted(iteritems(counts), key=lambda x: x[1])[:keep_size])
+    counts = dict(sorted(iteritems(counts), key=lambda x: x[1])[-keep_size:])
 
     # Build vocab
     print("Building vocab", flush=True)
@@ -80,19 +80,19 @@ def main():
         # Summary writer
         writer = tf.summary.FileWriter(logdir, graph=sess.graph)
 
-        # Projector
-        config = projector.ProjectorConfig()
-        embedding_config = config.embeddings.add()
-        embedding_config.tensor_name = u.name
-        embedding_config.metadata_path = os.path.join(logdir, 'labels_256.tsv')
-        projector.visualize_embeddings(writer, config)
-
         # Eval
         sess.run(tf.global_variables_initializer())
         d, u, v = sess.run([d, u, v], feed_dict={X: matrix})
         singular_values = tf.Variable(d, "singular")
         embedding = tf.Variable(u, "embedding")
         sess.run([singular_values.initializer, embedding.initializer])
+
+        # Projector
+        config = projector.ProjectorConfig()
+        embedding_config = config.embeddings.add()
+        embedding_config.tensor_name = embedding.name
+        embedding_config.metadata_path = os.path.join(logdir, 'labels_256.tsv')
+        projector.visualize_embeddings(writer, config)
 
         # Saver, Save model
         saver = tf.train.Saver([singular_values, embedding])
