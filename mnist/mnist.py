@@ -6,6 +6,12 @@ import time
 from tensorflow.examples.tutorials.mnist import input_data
 from mnist_models import *
 
+# Linear
+# lr = 1e-3
+# total_epochs = 200
+# batch_size = 512
+# X, y, yhat = mnist_linear()
+
 # NN Model
 # lr = 8e-3
 # total_epochs = 50
@@ -22,12 +28,12 @@ from mnist_models import *
 # Conv net
 lr = 1e-4
 dropout = 0.5
-total_epochs = 20
-batch_size = 48
+total_epochs = 100
+batch_size = 256
 X, y, dropout_prob, yhat = mnist_conv_net()
 
 # Load data
-mnist = input_data.read_data_sets("data/mnist", one_hot=True)
+mnist = input_data.read_data_sets("/media/sdb/datasets/minst", one_hot=True)
 
 # Loss function
 loss_func = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=yhat)
