@@ -1,7 +1,8 @@
 import tensorflow as tf
 import os
+import re
 import numpy as np
-from six import iteritems
+from six import iteritems, iterkeys
 import pickle
 from tensorflow.contrib.tensorboard.plugins import projector
 
@@ -10,22 +11,49 @@ def pickle_it(d, filename):
         pickle.dump(d, f)
 
 def text2matrix(filename, window_size=4):
+    # Read in preprocessed text
+    space_regex = re.compile(r'\s+')
     with open(filename, "r") as f:
-        words = f.read().split(' ')
+        words = space_regex.split(f.read())
 
+    # Counts
+    print("Bulding count dictionary", flush=True)
+    counts = {}
+    for word in words:
+        c = counts.get(word, 0) + 1
+        counts[word] = c
+
+    # Trim by frequency
+    print("Trimming by frequency", flush=True)
+    keep_size = 9999
+    counts = dict(sorted(iteritems(counts), key=lambda x: x[1])[:keep_size])
+
+    # Build vocab
+    print("Building vocab", flush=True)
     word2id = {}
     id2word = {}
-
-    for i, word in enumerate(set(words)):
+    i = 0
+    for word in iterkeys(counts):
         word2id[word] = i
         id2word[i] = word
+        i += 1
+    word2id['<UNK>'] = i
+    id2word[i] = '<UNK>'
 
+    # Build co-occurence matrix
+    print("Building cooccurrence matrix", flush=True)
     matrix = np.zeros((len(word2id), len(word2id)))
     for index, word in enumerate(words):
-        center = word
         context = words[max(0, index - window_size) : index] + words[index + 1 : min(index + 1 + window_size, len(words))]
+
+        if word not in word2id:
+            word = '<UNK>'
+
         for context_word in context:
-            matrix[word2id[center], word2id[context_word]] += 1.
+            if context_word not in word2id:
+                context_word = '<UNK>'
+
+            matrix[word2id[word], word2id[context_word]] += 1.
 
     return word2id, id2word, matrix
 
@@ -68,9 +96,10 @@ def main():
 
         # Saver, Save model
         saver = tf.train.Saver([singular_values, embedding])
-        saver.save(sess, logdir)
+        saver.save(sess, os.path.join(logdir, 'model.ckpt'))
         save_vocab(id2word, os.path.join(logdir, 'labels_256.tsv'))
 
+        print("Finished!", flush=True)
         #np.save("d", _d)
         #np.save("u", _u)
         #np.save("v", _v)
